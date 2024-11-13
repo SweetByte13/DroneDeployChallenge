@@ -159,13 +159,15 @@ class ImageInfo(Resource):
         global image_store
         data = request.get_json()
         query = data.get('query').lower()
-
+        
         response_data = {}
         
-        image_id_match = re.search(r'image (\d{3})', query)
+        # Extract the first integer found in the query
+        image_id_match = re.search(r'\d+', query)
         if image_id_match:
-            image_id = int(image_id_match.group(1))
-            image = next((img for img in image_store if int(img["image_id"]) == image_id), None)
+            image_id = int(image_id_match.group(0))  # Extracts the integer from the query
+            # Compare image_id without leading zeros
+            image = next((img for img in image_store if int(img["image_id"].lstrip('0')) == image_id), None)
             if image:
                 attribute_keywords = {
                     'timestamp': 'timestamp',
@@ -193,15 +195,16 @@ class ImageInfo(Resource):
                 attribute = next((attribute_keywords[key] for key in attribute_keywords if key in query), None)
                 
                 if attribute and attribute in image:
-                    response_data = {'message': f'The {attribute} of image {image_id} is {image[attribute]}.'}
+                    response_data = {'message': f'The {attribute} of image {image_id:03d} is {image[attribute]}.'}
                 else:
-                    response_data = {'message': f'Attribute not found or supported in image {image_id}.'}
+                    response_data = {'message': f'Attribute not found or supported in image {image_id:03d}.'}
             else:
-                response_data = {'message': f'Image with ID {image_id} not found.'}
+                response_data = {'message': f'Image with ID {image_id:03d} not found.'}
         else:
             response_data = {'message': 'Image ID not recognized or supported.'}
-
+        
         return make_response(jsonify(response_data), 200)
+
 
 
 api.add_resource(Images, '/images')
